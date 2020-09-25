@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+
+    db:
+        image: "mysql/mysql-server:8.0.21"
+        container_name: db
+        command: [ "mysqld",
+                    "--character-set-server=utf8mb4",
+                    "--collation-server=utf8mb4_unicode_ci",
+                    "--bind-address=0.0.0.0",
+                    "--default_authentication_plugin=mysql_native_password" ]
+        ports:
+            - "3306:3306"
+        networks:
+            - wpnet
+        volumes:
+            - type: bind
+              source: ./database
+              target: /var/lib/mysql
+            # - "./database:/var/lib/mysql:rw"
+        restart: always
+        environment:
+           MYSQL_ROOT_PASSWORD: "w0rdw0rd"
+           MYSQL_ROOT_HOST: "%"
+           MYSQL_USER: dbuser
+           MYSQL_PASSWORD: dbpassw0rd
+           MYSQL_DATABASE: wpdb
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        networks:
+            - wpnet
+        environment:
+            PMA_HOST: db
+            PMA_USER: root
+            PMA_PASSWORD: w0rdw0rd
+            PHP_UPLOAD_MAX_FILESIZE: 1G
+            PHP_MAX_INPUT_VARS: 1G
+        ports:
+            - "8001:80"
+
+    wp:
+        image: wordpress:php7.2-apache
+        container_name: wp
+        networks:
+            - wpnet
+        restart: always
+        ports:
+            - '4080:80'
+        environment:
+            PATH: "/usr/local/sbin:/usr/local/mybin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        volumes:
+            - ./logs:/var/log/apache2:rw
+            - ./roots/html:/var/www/html:rw
+            # - ./sites-enabled:/etc/apache2/sites-enabled:rw
+            - ./mybin:/usr/local/mybin
+        
+networks:
+    wpnet:
+        driver: bridge
+
